@@ -1,0 +1,1 @@
+# ChadFrogsNFT Minter Frontend
