@@ -1,20 +1,23 @@
-import Minter from "./Minter";
-import { WalletConnector, WalletContext } from "./WalletConnector";
+import Minter from './Minter';
+import { WalletConnectButton, WalletConnector, WalletContext } from './WalletConnector';
 // import AdminPanel from "./AdminPanel";
 // import { createContext, useContext } from "react";
 
 // import TwitterIcon from "@mui/icons-material/Twitter";
-import { SvgIcon, Icon } from "@mui/material";
+import { SvgIcon, Icon } from '@mui/material';
 
-import { ReactComponent as TwitterLogo } from "../images/twitter.svg";
-import { ReactComponent as DiscordLogo } from "../images/discord.svg";
-import { ReactComponent as OpenseaLogo } from "../images/opensea.svg";
+import { ReactComponent as TwitterLogo } from '../images/twitter.svg';
+import { ReactComponent as DiscordLogo } from '../images/discord.svg';
+import { ReactComponent as OpenseaLogo } from '../images/opensea.svg';
 
-import Button from "@mui/material/Button";
-import Stack from "@mui/material/Stack";
-import { useContext } from "react";
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import { useContext } from 'react';
 
 // const TwitterSvg = require("../images/twitter.svg");
+const startDate = new Date(
+  'Sat Oct 16 2021 23:19:39 GMT+0200 (Central European Summer Time)'
+).getTime();
 
 const Socials = () => {
   return (
@@ -51,26 +54,18 @@ const Socials = () => {
 };
 
 function Home() {
-  const { walletAddress, requestAccount } = useContext(WalletContext);
-  const addressInfo = walletAddress
-    ? walletAddress.substring(0, 6) + "..." + walletAddress.substring(38)
-    : "Connect Wallet";
-
   return (
     <div className="Home">
       <div className="header">
         <Socials />
-
-        <Button variant="outlined" onClick={requestAccount}>
-          {addressInfo}
-        </Button>
+        <WalletConnectButton />
       </div>
       <div className="container">
         {/* <AdminPanel /> */}
 
         <h1 id="title">ChadFrogsNFT</h1>
 
-        <Minter />
+        <Minter startDate={startDate} />
       </div>
       <div className="footer"></div>
     </div>
