@@ -1,6 +1,6 @@
 import './WalletConnector.css';
 import { createContext, useMemo, useState, useContext } from 'react';
-import { Snackbar, Button } from '@mui/material';
+import { Link, Snackbar, Button } from '@mui/material';
 
 import { ethers } from 'ethers';
 
@@ -17,7 +17,10 @@ function getProvider() {
 }
 
 export const WalletContext = createContext({
+  network: undefined,
   walletAddress: '',
+  isConnected: undefined,
+  signContract: undefined,
   requestAccount: undefined,
 });
 
@@ -34,11 +37,26 @@ export const WalletConnectButton = () => {
   );
 };
 
+export const TransactionLink = ({ txHash, message }) => {
+  const { network } = useContext(WalletContext);
+  return (
+    <Link
+      href={
+        (network?.chainId !== 1 ? 'https://rinkeby.etherscan.io/tx/' : 'https://etherscan.io/tx/') +
+        txHash
+      }
+      target="_blank"
+      rel="noreferrer"
+    >
+      {message}
+    </Link>
+  );
+};
+
 export function WalletConnector({ children }) {
   const [network, setNetwork] = useState(null);
   const [provider, setProvider] = useState(null);
   const [address, setAddress] = useState(null);
-  const [contractOwner, setContractOwner] = useState(null);
   const [signContract, setSignContract] = useState(null);
 
   const [alertState, setAlertState] = useState({
@@ -73,22 +91,15 @@ export function WalletConnector({ children }) {
 
   useMemo(() => {
     setProvider(getProvider());
-    contract
-      .owner()
-      .then(setContractOwner)
-      .catch(() => {});
   }, []);
 
   useMemo(() => {
     if (provider) {
-      provider.getNetwork().then(setNetwork);
       setSignContract(contract.connect(provider.getSigner()));
+      provider.getNetwork().then(setNetwork).catch(handleError);
       provider.send('eth_accounts').then(updateAccounts).catch(handleError);
     }
   }, [provider]);
-
-  const isContractOwner =
-    address && contractOwner && address.toLowerCase() === contractOwner.toLowerCase();
 
   const isValidNetwork = network?.chainId === validNetwork;
 
@@ -97,7 +108,6 @@ export function WalletConnector({ children }) {
   const context = {
     network: network,
     walletAddress: address,
-    isContractOwner: isContractOwner,
     isConnected: isConnected,
     signContract: signContract,
     requestAccount: requestAccount,

@@ -1,23 +1,28 @@
 import Minter from './Minter';
-import { WalletConnectButton, WalletConnector, WalletContext } from './WalletConnector';
-// import AdminPanel from "./AdminPanel";
+import { WalletConnectButton } from './WalletConnector';
+import AdminPanel from './AdminPanel';
 // import { createContext, useContext } from "react";
 
 // import TwitterIcon from "@mui/icons-material/Twitter";
-import { SvgIcon, Icon } from '@mui/material';
+import { SvgIcon } from '@mui/material';
 
 import { ReactComponent as TwitterLogo } from '../images/twitter.svg';
 import { ReactComponent as DiscordLogo } from '../images/discord.svg';
 import { ReactComponent as OpenseaLogo } from '../images/opensea.svg';
 
 import Button from '@mui/material/Button';
-import Stack from '@mui/material/Stack';
-import { useContext } from 'react';
+// import Stack from '@mui/material/Stack';
+// import { useContext } from 'react';
 
 // const TwitterSvg = require("../images/twitter.svg");
 const startDate = new Date(
   'Sat Oct 16 2021 23:19:39 GMT+0200 (Central European Summer Time)'
 ).getTime();
+const contractSupplyTotal = 5000;
+const contractSupplyReserve = 100;
+const contractMintPrice = '0.03';
+const contractPurchaseLimit = 10;
+const goLive = false;
 
 const Socials = () => {
   return (
@@ -61,11 +66,21 @@ function Home() {
         <WalletConnectButton />
       </div>
       <div className="container">
-        {/* <AdminPanel /> */}
+        <AdminPanel />
 
         <h1 id="title">ChadFrogsNFT</h1>
 
-        <Minter startDate={startDate} />
+        <Minter
+          startDate={startDate}
+          contractDefaults={{
+            supplyMinted: 0,
+            supplyTotal: contractSupplyTotal,
+            supplyReserve: contractSupplyReserve,
+            mintPrice: contractMintPrice,
+            purchaseLimit: contractPurchaseLimit,
+          }}
+          goLive={goLive}
+        />
       </div>
       <div className="footer"></div>
     </div>

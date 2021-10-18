@@ -1,17 +1,18 @@
-import { forwardRef, useMemo, useEffect, useState, useContext } from 'react';
+import { useMemo, useState, useContext } from 'react';
 import Countdown from 'react-countdown';
 
 import LoadingButton from '@mui/lab/LoadingButton';
 import MuiAlert from '@mui/material/Alert';
 import { Skeleton, Snackbar, Button, ButtonGroup } from '@mui/material';
 
-import { ethers } from 'ethers';
+import { ethers, BigNumber } from 'ethers';
 
-import { WalletContext } from './WalletConnector';
+import { WalletContext, TransactionLink } from './WalletConnector';
 import { contract } from './Web3Connector';
 
-const Minter = ({ startDate }) => {
-  const [isActive, setIsActive] = useState(false);
+const BN = BigNumber.from;
+
+const Minter = ({ startDate, contractDefaults, goLive }) => {
   const [mintAmount, setMintAmount] = useState(1);
   const [isMinting, setIsMinting] = useState(false);
   const [alertState, setAlertState] = useState({
@@ -20,13 +21,26 @@ const Minter = ({ startDate }) => {
     severity: undefined,
   });
 
-  const [contractIsPaused, setContractIsPaused] = useState(true);
-  const [contractSupplyMinted, setContractSupplyMinted] = useState(null);
-  const [contractSupplyTotal, setContractSupplyTotal] = useState(null);
-  const [contractSupplyReserve, setContractSupplyReserve] = useState(null);
+  const defaults = {
+    supplyMinted: contractDefaults?.supplyMinted != null ? BN(contractDefaults.supplyMinted) : null,
+    supplyTotal: contractDefaults?.supplyTotal != null ? BN(contractDefaults.supplyTotal) : null,
+    supplyReserve:
+      contractDefaults?.supplyReserve != null ? BN(contractDefaults.supplyReserve) : null,
+    mintPrice:
+      contractDefaults?.mintPrice != null
+        ? ethers.utils.parseEther(contractDefaults.mintPrice)
+        : null,
+    purchaseLimit:
+      contractDefaults?.purchaseLimit != null ? BN(contractDefaults.purchaseLimit) : 10,
+  };
 
-  const [contractMintPrice, setContractMintPrice] = useState(null);
-  const [contractPurchaseLimit, setContractPurchaseLimit] = useState(null);
+  const [contractIsActive, setContractIsActive] = useState(false);
+  const [contractSupplyMinted, setContractSupplyMinted] = useState(defaults.supplyMinted);
+  const [contractSupplyTotal, setContractSupplyTotal] = useState(defaults.supplyTotal);
+  const [contractSupplyReserve, setContractSupplyReserve] = useState(defaults.supplyReserve);
+
+  const [contractMintPrice, setContractMintPrice] = useState(defaults.mintPrice);
+  const [contractPurchaseLimit, setContractPurchaseLimit] = useState(defaults.purchaseLimit);
 
   const { signContract, isConnected } = useContext(WalletContext);
 
@@ -44,17 +58,26 @@ const Minter = ({ startDate }) => {
   };
 
   const updateContractState = () => {
-    contract.paused().then(setContractIsPaused).catch(handleError);
+    contract.isActive().then(setContractIsActive).catch(handleError);
     contract.totalSupply().then(setContractSupplyMinted).catch(handleError);
   };
 
   useMemo(() => {
-    contract.MAX_SUPPLY().then(setContractSupplyTotal).catch(handleError);
-    contract.reserveSupply().then(setContractSupplyReserve).catch(handleError);
+    contract.on(contract.filters.StateUpdate(), updateContractState);
+    if (goLive) {
+      // only fetch if these haven't been declared beforehand
+      if (defaults?.supplyTotal == null)
+        contract.MAX_SUPPLY().then(setContractSupplyTotal).catch(handleError);
+      if (defaults?.supplyReserve == null)
+        contract.reserveSupply().then(setContractSupplyReserve).catch(handleError);
 
-    contract.PRICE().then(setContractMintPrice).catch(handleError);
-    contract.PURCHASE_LIMIT().then(setContractPurchaseLimit).catch(handleError);
-    updateContractState();
+      if (defaults?.mintPrice == null)
+        contract.PRICE().then(setContractMintPrice).catch(handleError);
+      if (defaults?.purchaseLimit == null)
+        contract.PURCHASE_LIMIT().then(setContractPurchaseLimit).catch(handleError);
+
+      updateContractState();
+    }
   }, []);
 
   const onMintPressed = () => {
@@ -67,15 +90,13 @@ const Minter = ({ startDate }) => {
       .then(async (tx) => {
         setAlertState({
           open: true,
-          message: 'Processing Transaction',
+          message: <TransactionLink txHash={tx.hash} message="Processing Transaction" />,
           severity: 'info',
         });
-        await tx.wait();
-        // const receipt = await tx.wait();
-        // console.log('transaction hash: ', receipt);
+        const { transactionHash } = await tx.wait();
         setAlertState({
           open: true,
-          message: 'Successfully minted!',
+          message: <TransactionLink txHash={transactionHash} message="Successfully minted!" />,
           severity: 'success',
         });
         setIsMinting(false);
@@ -97,26 +118,25 @@ const Minter = ({ startDate }) => {
   };
 
   const updateMintAmount = (amount) => {
-    if (0 < amount && amount <= (contractPurchaseLimit?.toString() ?? 10)) setMintAmount(amount);
+    if (0 < amount && amount <= contractPurchaseLimit?.toString()) setMintAmount(amount);
   };
 
   return (
     <div className="minter">
       <Countdown
         date={startDate}
-        onMount={({ completed }) => completed && setIsActive(true)}
-        onComplete={() => setIsActive(true)}
+        // onMount={({ completed }) => completed && setIsActive(true)}
+        // onComplete={() => setIsActive(true)}
         renderer={renderCounter}
       />
       <LoadingButton
         className="mint-button"
         onClick={onMintPressed}
         loading={isMinting}
-        disabled={!isConnected || isMinting || contractIsPaused || isSoldOut}
+        disabled={!isConnected || isMinting || !contractIsActive || isSoldOut}
         variant="contained"
       >
         {isSoldOut ? 'SOLD OUT!' : <span className="mint-button-text">MINT</span>}
-        {/* {contractIsPaused ? "Sale is not Active" : "Mint NFT!"} */}
       </LoadingButton>
       <br />
       <ButtonGroup className="mint-dial" size="small" variant="outlined">
@@ -154,13 +174,13 @@ const Minter = ({ startDate }) => {
                 {contractSupplyMinted == null ? (
                   <Skeleton width={40} />
                 ) : (
-                  <span id="supplyMinted">{contractSupplyMinted?.toString() ?? '?'}</span>
+                  <span id="supplyMinted">{contractSupplyMinted?.toString()}</span>
                 )}
-                {'/'}
+                {' / '}
                 {contractSupplyMintable == null ? (
                   <Skeleton width={40} />
                 ) : (
-                  <span id="mintableSupplyTotal"> {contractSupplyMintable?.toString() ?? '?'}</span>
+                  <span id="mintableSupplyTotal">{contractSupplyMintable?.toString()}</span>
                 )}
                 <strong> CHADS</strong>
               </h4>
