@@ -8,8 +8,6 @@ import MuiAlert from '@mui/material/Alert';
 
 import { contract } from './Web3Connector';
 
-const validNetwork = 4;
-
 function getProvider() {
   if (window.ethereum) {
     return new ethers.providers.Web3Provider(window.ethereum);
@@ -53,7 +51,7 @@ export const TransactionLink = ({ txHash, message }) => {
   );
 };
 
-export function WalletConnector({ children }) {
+export function WalletConnector({ validChainId, children }) {
   const [network, setNetwork] = useState(null);
   const [provider, setProvider] = useState(null);
   const [address, setAddress] = useState(null);
@@ -89,8 +87,26 @@ export function WalletConnector({ children }) {
     }
   };
 
+  const addAccountListener = () => {
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', (accounts) => {
+        updateAccounts(accounts);
+      });
+    }
+  };
+
+  const addNetworkListener = () => {
+    if (window.ethereum) {
+      window.ethereum.on('networkChanged', (networkId) => {
+        setProvider(getProvider());
+      });
+    }
+  };
+
   useMemo(() => {
     setProvider(getProvider());
+    addAccountListener();
+    addNetworkListener();
   }, []);
 
   useMemo(() => {
@@ -101,7 +117,7 @@ export function WalletConnector({ children }) {
     }
   }, [provider]);
 
-  const isValidNetwork = network?.chainId === validNetwork;
+  const isValidNetwork = network?.chainId === validChainId;
 
   const isConnected = address && isValidNetwork;
 
