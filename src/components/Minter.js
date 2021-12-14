@@ -7,8 +7,10 @@ import { Skeleton, Snackbar, Button, ButtonGroup } from '@mui/material';
 
 import { ethers, BigNumber } from 'ethers';
 
-import { WalletContext, TransactionLink } from './WalletConnector';
-import { contract } from './Web3Connector';
+import { WalletContext } from './WalletConnector';
+import { Web3Context } from './Web3Connector';
+
+import { DStack, DTextField, DTextFieldInfo, DDateTimePicker } from './defaults';
 
 const BN = BigNumber.from;
 
@@ -43,23 +45,20 @@ const Minter = ({ startDate, contractDefaults, goLive }) => {
   const [contractPurchaseLimit, setContractPurchaseLimit] = useState(defaults.purchaseLimit);
 
   const { signContract, isConnected } = useContext(WalletContext);
+  const { contract, web3Provider, handleTxWrapper, handleTxError } = useContext(Web3Context);
 
   const contractSupplyMintable =
     contractSupplyReserve != null ? contractSupplyTotal?.sub(contractSupplyReserve) : null;
 
   const isSoldOut = contractSupplyMintable && contractSupplyMintable === 0;
 
-  const handleError = (e) => {
-    // setAlertState({
-    //   open: true,
-    //   message: e.message,
-    //   severity: 'error',
-    // });
+  const handleReadError = (e) => {
+    console.error(e);
   };
 
   const updateContractState = () => {
-    contract.isActive().then(setContractIsActive).catch(handleError);
-    contract.totalSupply().then(setContractSupplyMinted).catch(handleError);
+    contract.isActive().then(setContractIsActive).catch(handleReadError);
+    contract.totalSupply().then(setContractSupplyMinted).catch(handleReadError);
   };
 
   useMemo(() => {
@@ -67,18 +66,23 @@ const Minter = ({ startDate, contractDefaults, goLive }) => {
     if (goLive) {
       // only fetch if these haven't been declared beforehand
       if (defaults?.supplyTotal == null)
-        contract.MAX_SUPPLY().then(setContractSupplyTotal).catch(handleError);
+        contract.MAX_SUPPLY().then(setContractSupplyTotal).catch(handleReadError);
       if (defaults?.supplyReserve == null)
-        contract.reserveSupply().then(setContractSupplyReserve).catch(handleError);
+        contract.reserveSupply().then(setContractSupplyReserve).catch(handleReadError);
 
       if (defaults?.mintPrice == null)
-        contract.PRICE().then(setContractMintPrice).catch(handleError);
+        contract.PRICE().then(setContractMintPrice).catch(handleReadError);
       if (defaults?.purchaseLimit == null)
-        contract.PURCHASE_LIMIT().then(setContractPurchaseLimit).catch(handleError);
+        contract.PURCHASE_LIMIT().then(setContractPurchaseLimit).catch(handleReadError);
 
       updateContractState();
     }
   }, []);
+
+  const handleTx = handleTxWrapper(() => {
+    setIsMinting(false);
+    updateContractState();
+  });
 
   const onMintPressed = () => {
     setIsMinting(true);
@@ -87,39 +91,19 @@ const Minter = ({ startDate, contractDefaults, goLive }) => {
     const txValue = mintPrice.mul(mintAmount);
     signContract
       .mintChad(mintAmount, { value: txValue })
-      .then(async (tx) => {
-        setAlertState({
-          open: true,
-          message: <TransactionLink txHash={tx.hash} message="Processing Transaction" />,
-          severity: 'info',
-        });
-        const { transactionHash } = await tx.wait();
-        setAlertState({
-          open: true,
-          message: <TransactionLink txHash={transactionHash} message="Successfully minted!" />,
-          severity: 'success',
-        });
-        setIsMinting(false);
-        updateContractState();
-      })
+      .then(handleTx)
       .catch((e) => {
-        setAlertState({
-          open: true,
-          message: e?.message ?? 'Minting failed',
-          severity: 'error',
-        });
+        handleTxError(e);
         setIsMinting(false);
         updateContractState();
       });
   };
 
-  const alertHandleClose = (event, reason) => {
-    if (reason !== 'clickaway') setAlertState({ ...alertState, open: false });
-  };
-
   const updateMintAmount = (amount) => {
     if (0 < amount && amount <= contractPurchaseLimit?.toString()) setMintAmount(amount);
   };
+
+  console.log(!isConnected, isMinting, !contractIsActive, isSoldOut);
 
   return (
     <div className="minter">
@@ -141,6 +125,7 @@ const Minter = ({ startDate, contractDefaults, goLive }) => {
       <br />
       <ButtonGroup className="mint-dial" size="small" variant="outlined">
         <Button
+          variant="text"
           className="mint-dial-increment"
           onClick={() => {
             updateMintAmount(mintAmount - 1);
@@ -148,8 +133,11 @@ const Minter = ({ startDate, contractDefaults, goLive }) => {
         >
           -
         </Button>
-        <Button className="mint-dial-digit">{mintAmount}</Button>
+        <Button variant="text" className="mint-dial-digit">
+          {mintAmount}
+        </Button>
         <Button
+          variant="text"
           className="mint-dial-increment"
           onClick={() => {
             updateMintAmount(mintAmount + 1);
@@ -182,7 +170,7 @@ const Minter = ({ startDate, contractDefaults, goLive }) => {
                 ) : (
                   <span id="mintableSupplyTotal">{contractSupplyMintable?.toString()}</span>
                 )}
-                <strong> CHADS</strong>
+                <strong> NFTs</strong>
               </h4>
               <div className="progressbar">
                 <div
@@ -200,11 +188,6 @@ const Minter = ({ startDate, contractDefaults, goLive }) => {
           </div>
         </div>
       </div>
-      <Snackbar open={alertState.open} autoHideDuration={6000} onClose={alertHandleClose}>
-        <MuiAlert onClose={alertHandleClose} severity={alertState.severity}>
-          {alertState.message}
-        </MuiAlert>
-      </Snackbar>
     </div>
   );
 };

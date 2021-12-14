@@ -16,47 +16,27 @@ import Button from '@mui/material/Button';
 
 // const TwitterSvg = require("../images/twitter.svg");
 const startDate = new Date(
-  'Sat Oct 16 2021 23:19:39 GMT+0200 (Central European Summer Time)'
+  'Tue Nov 2 2021 23:19:39 GMT+0200 (Central European Summer Time)'
 ).getTime();
 const contractSupplyTotal = 5000;
 const contractSupplyReserve = 100;
 const contractMintPrice = '0.03';
 const contractPurchaseLimit = 10;
-const goLive = false;
+const goLive = true;
 
-const Socials = () => {
-  return (
-    <div className="socials">
-      <Button variant="outlined" href="" target="_blank" rel="noreferrer">
-        <SvgIcon>
-          <TwitterLogo />
-        </SvgIcon>
-      </Button>
-      <Button variant="outlined" href="" target="_blank" rel="noreferrer">
-        <SvgIcon>
-          <DiscordLogo />
-        </SvgIcon>
-      </Button>
-      <Button variant="outlined" href="" target="_blank" rel="noreferrer">
-        <SvgIcon>
-          <OpenseaLogo />
-        </SvgIcon>
-      </Button>
-    </div>
-  );
-  // <div className="socials">
-  //   <a href="https://discord.gg/BZEHymUKzB" target="_blank" rel="noreferrer">
-  //     <div className="coming-soon__icon coming-soon__icon--discord">
-  //       <i className="fab fa-discord"></i>
-  //     </div>
-  //   </a>
-  //   <a href="https://twitter.com/chadfrogs" target="_blank" rel="noreferrer">
-  //     <div className="coming-soon__icon coming-soon__icon--twitter">
-  //       <i className="fab fa-twitter"></i>
-  //     </div>
-  //   </a>
-  // </div>
-};
+const Socials = () => (
+  <div className="socials">
+    <Button variant="text" href="" target="_blank" rel="noreferrer" style={{ minWidth: 45 }}>
+      <TwitterLogo style={{ height: 24, width: 20 }} />
+    </Button>
+    <Button variant="text" href="" target="_blank" rel="noreferrer" style={{ minWidth: 45 }}>
+      <DiscordLogo style={{ height: 24, width: 20 }} />
+    </Button>
+    <Button variant="text" href="" target="_blank" rel="noreferrer" style={{ minWidth: 45 }}>
+      <OpenseaLogo />
+    </Button>
+  </div>
+);
 
 function Home() {
   return (
@@ -68,7 +48,7 @@ function Home() {
       <div className="container">
         <AdminPanel />
 
-        <h1 id="title">ChadFrogsNFT</h1>
+        <h1 id="title">NFT</h1>
 
         <Minter
           startDate={startDate}
@@ -82,7 +62,7 @@ function Home() {
           goLive={goLive}
         />
       </div>
-      <div className="footer"></div>
+      {/* <div className="footer"></div> */}
     </div>
   );
 }

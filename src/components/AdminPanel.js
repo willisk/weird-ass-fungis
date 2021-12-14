@@ -1,17 +1,17 @@
 import './AdminPanel';
 import React from 'react';
 import { useMemo, useState, useContext } from 'react';
-import { Snackbar, Button, TextField, Stack } from '@mui/material';
-import MuiAlert from '@mui/material/Alert';
-// import Box from '@mui/material/Box';
+import { Button, TextField, Stack } from '@mui/material';
 
 import { ethers } from 'ethers';
 
-import { web3Provider, contract } from './Web3Connector';
-import { WalletContext, TransactionLink } from './WalletConnector';
+import { WalletContext } from './WalletConnector';
+import { Web3Context } from './Web3Connector';
+
+import { DStack, DTextField, DTextFieldInfo, DDateTimePicker } from './defaults';
 
 const AdminPanel = () => {
-  const [contractOwner, setContractOwner] = useState(null);
+  const [contractOwner, setContractOwner] = useState('?');
 
   const [saleIsActive, setSaleIsActive] = useState(false);
   const [contractBalance, setContractBalance] = useState(0);
@@ -19,17 +19,12 @@ const AdminPanel = () => {
   const [contractName, setContractName] = useState('');
   const [contractBaseURI, setContractBaseURI] = useState('');
 
-  const [alertState, setAlertState] = useState({
-    open: false,
-    message: '',
-    severity: undefined,
-  });
-
   const { walletAddress, signContract, isConnected, network } = useContext(WalletContext);
+  const { contract, web3Provider, handleTxWrapper, handleTxError } = useContext(Web3Context);
 
   const isContractOwner =
-    true ||
-    (walletAddress && contractOwner && walletAddress.toLowerCase() === contractOwner.toLowerCase());
+    // true ||
+    walletAddress && contractOwner && walletAddress.toLowerCase() === contractOwner.toLowerCase();
 
   const updateContractState = () => {
     contract.isActive().then(setSaleIsActive);
@@ -39,57 +34,32 @@ const AdminPanel = () => {
     web3Provider.getBalance(contract.address).then(setContractBalance);
   };
 
-  const handleAlertClose = (event, reason) => {
-    if (reason !== 'clickaway') setAlertState({ ...alertState, open: false });
-  };
-
-  const handleError = (e) => {
-    setAlertState({
-      open: true,
-      message: e.message,
-      severity: 'error',
-    });
-  };
+  const handleTx = handleTxWrapper(updateContractState);
 
   useMemo(() => {
-    contract.owner().then(setContractOwner).catch(handleError);
+    contract.on(contract.filters.StateUpdate(), updateContractState);
+    contract.owner().then(setContractOwner).catch(console.log);
     updateContractState();
   }, []);
-
-  const handleTx = async (tx) => {
-    setAlertState({
-      open: true,
-      message: <TransactionLink txHash={tx.hash} message="Processing Transaction" />,
-      severity: 'info',
-    });
-    const { transactionHash } = await tx.wait();
-    setAlertState({
-      open: true,
-      message: <TransactionLink txHash={transactionHash} message="Transaction successful!" />,
-      severity: 'success',
-    });
-    updateContractState();
-  };
 
   return isContractOwner ? (
     <div className="adminPanel">
       <details>
         <summary>Admin Panel</summary>
         <h2>Contract Details</h2>
-        <Stack spacing={2} sx={{ padding: '0 1em', maxWidth: '600px', margin: 'auto' }}>
-          <TextField label="Address" variant="standard" value={contract.address} disabled={true} />
-          <TextField label="Name" variant="standard" value={contractName} disabled={true} />
-          <TextField label="Symbol" variant="standard" value={contractSymbol} disabled={true} />
-          <TextField
+        <DStack>
+          <DTextFieldInfo label="Address" value={contract.address} />
+          <DTextFieldInfo label="Owner" value={contractOwner} />
+          <DTextFieldInfo label="Name" value={contractName} />
+          <DTextFieldInfo label="Symbol" value={contractSymbol} />
+          <DTextFieldInfo
             label="Sale State"
-            variant="standard"
             value={saleIsActive ? 'live' : 'paused'}
-            disabled={true}
             InputProps={{
               endAdornment: (
                 <Button
                   onClick={() =>
-                    signContract.setSaleState(!saleIsActive).then(handleTx).catch(handleError)
+                    signContract.setSaleState(!saleIsActive).then(handleTx).catch(handleTxError)
                   }
                   disabled={!isConnected}
                   variant="contained"
@@ -99,18 +69,14 @@ const AdminPanel = () => {
               ),
             }}
           />
-          <TextField
+          <DTextFieldInfo
             label="Balance"
-            variant="standard"
             value={' Ξ ' + parseFloat(ethers.utils.formatEther(contractBalance)).toFixed(4)}
-            disabled={true}
             InputProps={{
               endAdornment: (
                 <Button
                   variant="contained"
-                  onClick={() =>
-                    signContract.withdrawContractBalance().then(handleTx).catch(handleError)
-                  }
+                  onClick={() => signContract.withdraw().then(handleTx).catch(handleTxError)}
                   disabled={!isConnected}
                 >
                   withdraw
@@ -118,7 +84,7 @@ const AdminPanel = () => {
               ),
             }}
           />
-          <TextField
+          <DTextField
             label="Base URI"
             variant="standard"
             value={contractBaseURI}
@@ -127,7 +93,7 @@ const AdminPanel = () => {
               endAdornment: (
                 <Button
                   onClick={() =>
-                    signContract.setBaseURI(contractBaseURI).then(handleTx).catch(handleError)
+                    signContract.setBaseURI(contractBaseURI).then(handleTx).catch(handleTxError)
                   }
                   disabled={!isConnected}
                   variant="contained"
@@ -137,13 +103,8 @@ const AdminPanel = () => {
               ),
             }}
           />
-        </Stack>
+        </DStack>
       </details>
-      <Snackbar open={alertState.open} autoHideDuration={6000} onClose={handleAlertClose}>
-        <MuiAlert onClose={handleAlertClose} severity={alertState.severity}>
-          {alertState.message}
-        </MuiAlert>
-      </Snackbar>
     </div>
   ) : (
     <div />

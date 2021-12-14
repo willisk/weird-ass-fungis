@@ -1,12 +1,11 @@
-import './WalletConnector.css';
-import { createContext, useMemo, useState, useContext } from 'react';
-import { Link, Snackbar, Button } from '@mui/material';
+import './styles/Connector.css';
+import { createContext, useMemo, useEffect, useState, useContext } from 'react';
+import { Snackbar, Button } from '@mui/material';
+import MuiAlert from '@mui/material/Alert';
 
 import { ethers } from 'ethers';
 
-import MuiAlert from '@mui/material/Alert';
-
-import { contract } from './Web3Connector';
+import { Web3Context } from './Web3Connector';
 
 function getProvider() {
   if (window.ethereum) {
@@ -28,6 +27,7 @@ export const WalletConnectButton = () => {
   const addressInfo = walletAddress
     ? walletAddress.substring(0, 6) + '...' + walletAddress.substring(38)
     : 'Connect Wallet';
+
   return (
     <Button className="wallet-button" variant="outlined" onClick={requestAccount}>
       {addressInfo}
@@ -35,23 +35,9 @@ export const WalletConnectButton = () => {
   );
 };
 
-export const TransactionLink = ({ txHash, message }) => {
-  const { network } = useContext(WalletContext);
-  return (
-    <Link
-      href={
-        (network?.chainId !== 1 ? 'https://rinkeby.etherscan.io/tx/' : 'https://etherscan.io/tx/') +
-        txHash
-      }
-      target="_blank"
-      rel="noreferrer"
-    >
-      {message}
-    </Link>
-  );
-};
+export function WalletProvider({ children }) {
+  const { contract, isValidChainId, setChainId } = useContext(Web3Context);
 
-export function WalletConnector({ validChainId, children }) {
   const [network, setNetwork] = useState(null);
   const [provider, setProvider] = useState(null);
   const [address, setAddress] = useState(null);
@@ -109,7 +95,7 @@ export function WalletConnector({ validChainId, children }) {
     addNetworkListener();
   }, []);
 
-  useMemo(() => {
+  useEffect(() => {
     if (provider) {
       setSignContract(contract.connect(provider.getSigner()));
       provider.getNetwork().then(setNetwork).catch(handleError);
@@ -117,9 +103,11 @@ export function WalletConnector({ validChainId, children }) {
     }
   }, [provider]);
 
-  const isValidNetwork = network?.chainId === validChainId;
+  useEffect(() => {
+    if (network) setChainId(network.chainId);
+  }, [network]);
 
-  const isConnected = address && isValidNetwork;
+  const isConnected = address && isValidChainId;
 
   const context = {
     network: network,
@@ -135,12 +123,6 @@ export function WalletConnector({ validChainId, children }) {
 
   return (
     <WalletContext.Provider value={context}>
-      {!isValidNetwork && network != null && (
-        <div className="invalid-network-banner">
-          Warning: Connected to {' ' + network.name + ' '}
-          network. Switch to mainnet in order to mint.
-        </div>
-      )}
       <Snackbar open={alertState.open} autoHideDuration={6000} onClose={handleAlertClose}>
         <MuiAlert onClose={handleAlertClose} severity={alertState.severity}>
           {alertState.message}

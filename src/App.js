@@ -1,23 +1,16 @@
 import './App.css';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { WalletConnector } from './components/WalletConnector';
+import { WalletProvider } from './components/WalletConnector';
+import { Web3Provider } from './components/Web3Connector';
 import Home from './components/Home';
 
 const theme = createTheme({
-  overrides: {
-    MuiButton: {
-      root: {
-        textTransform: 'none',
-      },
-    },
-  },
   palette: {
-    type: 'light',
     primary: {
-      main: '#3000d0',
+      main: '#0f0a3a',
     },
     secondary: {
-      main: '#f3ad15',
+      main: '#481c07',
     },
   },
 });
@@ -25,11 +18,11 @@ const theme = createTheme({
 function App() {
   return (
     <ThemeProvider theme={theme}>
-      <WalletConnector validChainId={4}>
-        <div className="App">
+      <Web3Provider>
+        <WalletProvider>
           <Home />
-        </div>
-      </WalletConnector>
+        </WalletProvider>
+      </Web3Provider>
     </ThemeProvider>
   );
 }
