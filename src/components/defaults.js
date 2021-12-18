@@ -10,10 +10,10 @@ const StyledStack = styled(Stack)(({ theme }) => ({
   textAlign: 'center',
 }));
 
-export const DStack = (props) => <StyledStack spacing={2} {...props} />;
-export const DTextField = (props) => <TextField variant="outlined" {...props} />;
-export const DTextFieldInfo = (props) => (
-  <DTextField
+export const SStack = (props) => <StyledStack spacing={2} {...props} />;
+export const STextField = (props) => <TextField variant="outlined" {...props} />;
+export const STextFieldReadOnly = (props) => (
+  <STextField
     variant="standard"
     inputProps={{
       readOnly: true,
@@ -21,9 +21,9 @@ export const DTextFieldInfo = (props) => (
     {...props}
   />
 );
-export const DDateTimePicker = ({ error, helperText, ...props }) => (
+export const SDateTimePicker = ({ error, helperText, ...props }) => (
   <DateTimePicker
     {...props}
-    renderInput={(params) => <DTextField {...params} error={error} helperText={helperText} />}
+    renderInput={(params) => <STextField {...params} error={error} helperText={helperText} />}
   />
 );

@@ -1,28 +1,40 @@
 import './App.css';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { WalletProvider } from './components/WalletConnector';
-import { Web3Provider } from './components/Web3Connector';
-import Home from './components/Home';
+import { Box, Button, CssBaseline, Typography, Tabs, Tab, Divider } from '@mui/material';
+import { Fragment, useState } from 'react';
+import { ThemeProvider, createTheme, themeOptions } from '@mui/material/styles';
+
+import { ContractInterfaceProvider, UnsupportedChainIdBanner } from './lib/ContractConnector';
+import Container from './components/Container';
+import { Web3ReactProvider } from '@web3-react/core';
+import { Web3Provider } from '@ethersproject/providers';
+
+function getLibrary(provider) {
+  const library = new Web3Provider(provider);
+  // library.pollingInterval = 12000;
+  return library;
+}
 
 const theme = createTheme({
   palette: {
+    mode: 'dark',
     primary: {
-      main: '#0f0a3a',
+      main: '#c6ff00',
     },
     secondary: {
-      main: '#481c07',
+      main: '#e040fb',
     },
+    divider: 'gray',
   },
 });
-
 function App() {
   return (
     <ThemeProvider theme={theme}>
-      <Web3Provider>
-        <WalletProvider>
-          <Home />
-        </WalletProvider>
-      </Web3Provider>
+      <CssBaseline />
+      <Web3ReactProvider getLibrary={getLibrary}>
+        <ContractInterfaceProvider>
+          <Container />
+        </ContractInterfaceProvider>
+      </Web3ReactProvider>
     </ThemeProvider>
   );
 }
