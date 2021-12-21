@@ -48,7 +48,13 @@ const getContractState = async (contract) => {
   const owner = await contract.owner();
   const publicSaleActive = await contract.isActive();
   const totalSupply = await contract.totalSupply();
-  const items = await Promise.all([...Array(totalSupply.toNumber())].map(async (_, i) => await contract.tokenURI(i)));
+  const items = await Promise.all(
+    [...Array(totalSupply.toNumber())].map(async (_, i) => ({
+      id: i,
+      uri: await contract.tokenURI(i),
+      // type: await contract.idToType(i),
+    }))
+  );
 
   return {
     address: contract.address,

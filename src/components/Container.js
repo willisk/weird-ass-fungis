@@ -3,7 +3,7 @@ import { Box, Button, Typography, Tabs, Tab, Divider } from '@mui/material';
 import { ContractInterfaceProvider, UnsupportedChainIdBanner, useContractState } from '../lib/ContractConnector';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 
-import { TwitterLogo, DiscordLogo, GithubLogo, SolanaLogo } from '../images/logos';
+import { TwitterLogo, DiscordLogo, GithubLogo, PolygonLogo } from '../images/logos';
 import { WalletConnectButton } from './WalletConnectButton';
 import AdminPanel from './AdminPanel';
 import { Mint } from './Mint';
@@ -24,7 +24,7 @@ function SocialsButton(props) {
 const Socials = () => (
   <Fragment>
     <Box marginBlock="auto">
-      <SocialsButton href="https://solana.com/" logo={SolanaLogo} />
+      <SocialsButton href="https://solana.com/" logo={PolygonLogo} />
     </Box>
     <Box marginBlock="auto">
       <SocialsButton href="" logo={GithubLogo} />

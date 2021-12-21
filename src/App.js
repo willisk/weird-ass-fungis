@@ -16,11 +16,14 @@ function getLibrary(provider) {
 
 const theme = createTheme({
   palette: {
+    // mode: 'light',
     mode: 'dark',
     primary: {
       main: '#c6ff00',
+      // main: '#5d175e',
     },
     secondary: {
+      // main: '#5d175e',
       main: '#e040fb',
     },
     divider: 'gray',
